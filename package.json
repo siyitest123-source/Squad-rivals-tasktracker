@@ -1,0 +1,10 @@
+{
+  "name": "squad-rivals-tasktracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Squad Rivals team workflow tracker — static dashboard with shared Postgres-backed state",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  }
+}

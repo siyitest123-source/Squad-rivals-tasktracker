@@ -867,11 +867,11 @@
 const PASSWORD = "chiliz2026";
 
 // ─── LAST UPDATED ───────────────────────────────────────────
-const LAST_UPDATED = "May 02, 2026";
+let LAST_UPDATED = "May 02, 2026";
 
 // ─── TEAM ───────────────────────────────────────────────────
 // Add/edit team members. The `id` is what you'll use in tasks.
-const PEOPLE = [
+let PEOPLE = [
   { id: "siyi",   name: "Siyi",   role: "Economy / On-chain" },
   { id: "altug",  name: "Altug",  role: "Product / AI Assistant" },
   { id: "bruno",  name: "Bruno",  role: "UX/UI / Frontend" },
@@ -880,7 +880,7 @@ const PEOPLE = [
 // ─── WORKSTREAMS ────────────────────────────────────────────
 // Status values: "done", "doing", "review", "planned", "blocked"
 // Owner ids must match an `id` from PEOPLE above.
-const WORKSTREAMS = [
+let WORKSTREAMS = [
 
   {
     id: "product-design",
@@ -954,7 +954,7 @@ const WORKSTREAMS = [
 // ─── PIPELINES ──────────────────────────────────────────────
 // Show how work connects across people. Each step references a
 // person by id and describes what they're delivering.
-const PIPELINES = [
+let PIPELINES = [
   {
     title: "Pipeline 1 · Squad Rivals MVP Build",
     description: "Product design feeds UX. Economy work runs in parallel and surfaces in the rewards and user profile screens.",
@@ -980,7 +980,7 @@ const PIPELINES = [
 // ─── DELIVERABLES ───────────────────────────────────────────
 // Current builds and resources to share with the team.
 // kind: short label like "Mock Game", "Dashboard", "Doc"
-const DELIVERABLES = [
+let DELIVERABLES = [
   {
     kind: "Mock Game · Testnet",
     title: "Mock game 1",
@@ -1003,7 +1003,7 @@ const DELIVERABLES = [
 
 // ─── RISKS ──────────────────────────────────────────────────
 // From section 11 of the product doc. Edit as the team learns.
-const RISKS = [
+let RISKS = [
   { name: "Too complex for first-time users", mitigation: "Onboarding checklist, auto-fill squad, clear CTAs, one guided demo path." },
   { name: "Looks like gambling", mitigation: "Avoid wager/odds language. No token loss based on match outcomes. Packs earned by performance, not chance." },
   { name: "Pay-to-win concern", mitigation: "Best 10 results count weekly. Paid actions give flexibility, not guaranteed wins." },
@@ -1076,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="ws-title">${ws.title}</div>
             <div class="ws-owner">${owner.name}${owner.role ? ' · ' + owner.role : ''}</div>
           </div>
-          <div class="ws-status ${ws.status}">${STATUS_LABEL[ws.status]}</div>
+          <div class="ws-status ${ws.status}" data-action="ws-status" data-ws="${ws.id}" title="Click to change status">${STATUS_LABEL[ws.status]}</div>
         </div>
         <div class="ws-progress">
           <div class="ws-progress-bar">
@@ -1088,8 +1088,8 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
         </div>
         <ul class="ws-tasks">
-          ${ws.tasks.map(t => `
-            <li>
+          ${ws.tasks.map((t, ti) => `
+            <li data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status">
               <div class="task-check ${t.status}"></div>
               <div>
                 <div class="task-text ${t.status === 'done' ? 'done' : ''}">${t.text}</div>
@@ -1169,17 +1169,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── PIPELINES VIEW ─────────────────────────────────────────
   function renderPipelines() {
-    document.getElementById('pipelines-list').innerHTML = PIPELINES.map(p => `
+    document.getElementById('pipelines-list').innerHTML = PIPELINES.map((p, pi) => `
       <div class="pipeline">
         <div class="pipeline-head">
           <div class="pipeline-title">${p.title}</div>
           <div class="pipeline-desc">${p.description}</div>
         </div>
         <div class="pipeline-flow">
-          ${p.steps.map(s => {
+          ${p.steps.map((s, si) => {
             const owner = personById(s.owner);
             return `
-              <div class="pipeline-step ${s.status}">
+              <div class="pipeline-step ${s.status}" data-action="step-status" data-pipe="${pi}" data-step="${si}" title="Click to change status">
                 <div class="pipeline-step-owner">${owner.name}</div>
                 <div class="pipeline-step-title">${s.title}</div>
                 <div class="pipeline-step-status ${s.status}">${STATUS_LABEL[s.status]}</div>
@@ -1230,6 +1230,93 @@ document.addEventListener('DOMContentLoaded', function() {
     renderRisks();
   }
 
+  // ─── SHARED PERSISTENCE (Vercel serverless + Postgres) ──────
+  const API = '/api/state';
+  const STATUS_CYCLE = ['planned', 'doing', 'review', 'done', 'blocked'];
+  const cycleStatus = (s) => STATUS_CYCLE[(STATUS_CYCLE.indexOf(s) + 1) % STATUS_CYCLE.length];
+
+  function snapshot() {
+    return {
+      people: PEOPLE, workstreams: WORKSTREAMS, pipelines: PIPELINES,
+      deliverables: DELIVERABLES, risks: RISKS, lastUpdated: LAST_UPDATED,
+    };
+  }
+
+  function todayLabel() {
+    return new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+  }
+
+  let saveEl;
+  function setSaveStatus(kind) {
+    if (!saveEl) {
+      const lu = document.getElementById('last-updated');
+      if (!lu) return;
+      saveEl = document.createElement('span');
+      saveEl.id = 'save-status';
+      saveEl.style.cssText = 'margin-left:10px;font-size:12px;';
+      lu.insertAdjacentElement('afterend', saveEl);
+    }
+    const map = {
+      saving: 'Saving…', saved: 'All changes saved',
+      error: 'Save failed — retrying…', offline: 'Offline — changes not saved',
+    };
+    saveEl.textContent = map[kind] || '';
+    saveEl.style.color = (kind === 'error' || kind === 'offline') ? 'var(--blocked)' : 'var(--text-faint)';
+  }
+
+  let saveTimer = null;
+  function saveState() {
+    setSaveStatus('saving');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        const r = await fetch(API, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ state: snapshot() }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        setSaveStatus('saved');
+      } catch (err) {
+        setSaveStatus('error');
+        setTimeout(saveState, 3000);
+      }
+    }, 400);
+  }
+
+  async function loadState() {
+    try {
+      const r = await fetch(API, { cache: 'no-store' });
+      if (r.ok) {
+        const j = await r.json();
+        if (j && j.state) {
+          const s = j.state;
+          if (Array.isArray(s.people)) PEOPLE = s.people;
+          if (Array.isArray(s.workstreams)) WORKSTREAMS = s.workstreams;
+          if (Array.isArray(s.pipelines)) PIPELINES = s.pipelines;
+          if (Array.isArray(s.deliverables)) DELIVERABLES = s.deliverables;
+          if (Array.isArray(s.risks)) RISKS = s.risks;
+          if (s.lastUpdated) LAST_UPDATED = s.lastUpdated;
+          setSaveStatus('saved');
+        } else {
+          // No saved state yet — seed the database with this file's defaults.
+          saveState();
+        }
+      } else {
+        setSaveStatus('offline');
+      }
+    } catch (err) {
+      setSaveStatus('offline');
+    }
+    render();
+  }
+
+  function commitChange() {
+    LAST_UPDATED = todayLabel();
+    render();
+    saveState();
+  }
+
   // ─── PASSWORD GATE ──────────────────────────────────────────
   function tryUnlock() {
     const input = document.getElementById('gate-input');
@@ -1247,7 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function showApp() {
     document.getElementById('gate').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
-    render();
+    loadState();
   }
 
   function lock() {
@@ -1273,6 +1360,43 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.classList.add('active');
       document.getElementById('view-' + btn.dataset.view).classList.add('active');
     });
+  });
+
+  // ─── EDIT: click a status to cycle it (saves + shares) ──────
+  (function injectEditStyles() {
+    const css = document.createElement('style');
+    css.textContent =
+      '[data-action]{cursor:pointer;}' +
+      '.ws-tasks li[data-action]{transition:background .12s;border-radius:8px;}' +
+      '.ws-tasks li[data-action]:hover{background:var(--surface-2);}' +
+      '.ws-status[data-action]:hover,.pipeline-step[data-action]:hover{filter:brightness(.96);}';
+    document.head.appendChild(css);
+  })();
+
+  document.getElementById('app').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    const a = el.dataset.action;
+    if (a === 'task-status') {
+      const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
+      const t = ws && ws.tasks[+el.dataset.task];
+      if (t) { t.status = cycleStatus(t.status); commitChange(); }
+    } else if (a === 'ws-status') {
+      const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
+      if (ws) { ws.status = cycleStatus(ws.status); commitChange(); }
+    } else if (a === 'step-status') {
+      const p = PIPELINES[+el.dataset.pipe];
+      const st = p && p.steps[+el.dataset.step];
+      if (st) { st.status = cycleStatus(st.status); commitChange(); }
+    }
+  });
+
+  // Pull the latest shared state when returning to the tab.
+  document.addEventListener('visibilitychange', () => {
+    const app = document.getElementById('app');
+    if (document.visibilityState === 'visible' && app && app.style.display !== 'none') {
+      loadState();
+    }
   });
 
   // ─── AUTO-UNLOCK IF SESSION IS REMEMBERED ──────────────────
