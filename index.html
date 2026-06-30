@@ -693,6 +693,15 @@
   .activity-time { color:var(--text-faint); font-size:12px; margin-left:auto; }
   .activity-detail { color:var(--text-dim); font-size:13px; margin-top:2px; }
   .activity-empty { color:var(--text-faint); padding:40px; text-align:center; }
+  /* inline editable text */
+  .editable { cursor:text; border-radius:4px; padding:1px 3px; margin:-1px -3px; transition:background .1s, box-shadow .1s; outline:none; }
+  .editable:hover { background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--border); }
+  .editable:focus { background:var(--surface); box-shadow:inset 0 0 0 1px var(--accent-2); }
+  .owner-select { font-size:11px; border:1px solid var(--border); border-radius:6px; padding:2px 4px; background:var(--surface); color:var(--text-dim); max-width:96px; cursor:pointer; font-family:inherit; }
+  .deliverable-card { display:block; }
+  .deliverable-arrow { text-decoration:none; color:var(--text-faint); font-size:16px; }
+  .deliverable-arrow:hover { color:var(--accent); }
+  .deliverable-url-input { width:100%; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11px; border:1px solid var(--border); border-radius:6px; padding:5px 7px; background:var(--surface-2); color:var(--accent-5); }
 </style>
 </head>
 <body>
@@ -1024,8 +1033,8 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="workstream">
         <div class="ws-head">
           <div>
-            <div class="ws-title">${ws.title}</div>
-            <div class="ws-owner">${owner.name}${owner.role ? ' · ' + owner.role : ''}</div>
+            <div class="ws-title editable" contenteditable="true" data-edit="ws-title" data-ws="${ws.id}" title="Click to edit">${escapeHtml(ws.title)}</div>
+            <div class="ws-owner">${escapeHtml(owner.name)}${owner.role ? ' · ' + escapeHtml(owner.role) : ''}</div>
           </div>
           <div class="ws-status ${ws.status}" data-action="ws-status" data-ws="${ws.id}" title="Click to change status">${STATUS_LABEL[ws.status]}</div>
         </div>
@@ -1046,6 +1055,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="task-text ${t.status === 'done' ? 'done' : ''}">${escapeHtml(t.text)}</div>
               </div>
               <div class="task-controls">
+                <select class="owner-select" data-edit="task-owner" data-ws="${ws.id}" data-task="${ti}" title="Assign to">
+                  ${PEOPLE.map(p => `<option value="${p.id}"${(t.owner || ws.owner) === p.id ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+                  <option value="unassigned"${(t.owner || ws.owner) === 'unassigned' ? ' selected' : ''}>Unassigned</option>
+                </select>
                 <input type="date" class="due-input" data-action="task-due" data-ws="${ws.id}" data-task="${ti}" value="${t.due || ''}" title="Set or change deadline">
                 <button class="task-remove" data-action="task-remove" data-ws="${ws.id}" data-task="${ti}" title="Remove task">×</button>
               </div>
@@ -1068,57 +1081,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // ─── PEOPLE VIEW ────────────────────────────────────────────
   function renderPeople() {
     const grid = document.getElementById('people-grid');
-    grid.innerHTML = PEOPLE.map(person => {
-      const myTasks = [];
-      WORKSTREAMS.forEach(ws => {
-        if (ws.owner === person.id) {
-          ws.tasks.forEach(t => myTasks.push({ ...t, ws: ws.title }));
-        }
-      });
-      const done = myTasks.filter(t => t.status === 'done').length;
-      const doing = myTasks.filter(t => t.status === 'doing' || t.status === 'review').length;
-      const current = myTasks.filter(t => t.status === 'doing' || t.status === 'review').slice(0, 3);
-
-      return `
+    grid.innerHTML = PEOPLE.map(person => `
         <div class="person-card">
           <div class="person-head">
             <div class="person-avatar">${initials(person.name)}</div>
             <div>
-              <div class="person-name">${person.name}</div>
-              <div class="person-role">${person.role}</div>
+              <div class="person-name">${escapeHtml(person.name)}</div>
+              <div class="person-role">${escapeHtml(person.role)}</div>
             </div>
           </div>
-          <div class="person-stats">
-            <div class="person-stat">
-              <div class="person-stat-num done">${done}</div>
-              <div class="person-stat-label">Done</div>
-            </div>
-            <div class="person-stat">
-              <div class="person-stat-num doing">${doing}</div>
-              <div class="person-stat-label">In Progress</div>
-            </div>
-            <div class="person-stat">
-              <div class="person-stat-num">${myTasks.length}</div>
-              <div class="person-stat-label">Total</div>
-            </div>
-          </div>
-          ${current.length ? `
-            <div class="person-current">Currently Working On</div>
-            <ul class="person-tasks">
-              ${current.map(t => `
-                <li>
-                  <div class="person-task-text">${escapeHtml(t.text)}</div>
-                  <div class="person-task-meta">
-                    <span class="ws-pill">${t.ws}</span>
-                    ${t.due ? `<span>Due ${formatDue(t.due)}</span>` : ''}
-                  </div>
-                </li>
-              `).join('')}
-            </ul>
-          ` : `<div class="person-current" style="color:var(--text-faint);">No tasks in progress</div>`}
         </div>
-      `;
-    }).join('');
+      `).join('');
   }
 
   // ─── PIPELINES VIEW ─────────────────────────────────────────
@@ -1147,10 +1120,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── RISKS VIEW ─────────────────────────────────────────────
   function renderRisks() {
-    document.getElementById('risks-list').innerHTML = RISKS.map(r => `
+    document.getElementById('risks-list').innerHTML = RISKS.map((r, ri) => `
       <li>
-        <div class="risk-name">${r.name}</div>
-        <div class="risk-mitigation">${r.mitigation}</div>
+        <div class="risk-name editable" contenteditable="true" data-edit="risk-name" data-risk="${ri}" title="Click to edit">${escapeHtml(r.name)}</div>
+        <div class="risk-mitigation editable" contenteditable="true" data-edit="risk-mit" data-risk="${ri}" data-multiline="true" title="Click to edit">${escapeHtml(r.mitigation)}</div>
       </li>
     `).join('');
   }
@@ -1159,16 +1132,16 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderDeliverables() {
     document.getElementById('deliverables-list').innerHTML = `
       <div class="deliverables-grid">
-        ${DELIVERABLES.map(d => `
-          <a class="deliverable-card" href="${d.url}" target="_blank" rel="noopener noreferrer">
+        ${DELIVERABLES.map((d, di) => `
+          <div class="deliverable-card">
             <div class="deliverable-head">
-              <div class="deliverable-kind">${d.kind}</div>
-              <div class="deliverable-arrow">↗</div>
+              <div class="deliverable-kind editable" contenteditable="true" data-edit="del-kind" data-del="${di}" title="Click to edit">${escapeHtml(d.kind)}</div>
+              <a class="deliverable-arrow" href="${escapeHtml(d.url)}" target="_blank" rel="noopener noreferrer" title="Open link">↗</a>
             </div>
-            <div class="deliverable-title">${d.title}</div>
-            <div class="deliverable-desc">${d.description}</div>
-            <div class="deliverable-url">${d.url}</div>
-          </a>
+            <div class="deliverable-title editable" contenteditable="true" data-edit="del-title" data-del="${di}" title="Click to edit">${escapeHtml(d.title)}</div>
+            <div class="deliverable-desc editable" contenteditable="true" data-edit="del-desc" data-del="${di}" data-multiline="true" title="Click to edit">${escapeHtml(d.description)}</div>
+            <input class="deliverable-url-input" type="url" data-edit="del-url" data-del="${di}" value="${escapeHtml(d.url)}" title="Edit link" spellcheck="false">
+          </div>
         `).join('')}
       </div>
     `;
@@ -1470,21 +1443,91 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Change: inline deadline editing on task rows.
+  // Change: inline deadline editing, task reassignment, deliverable URL.
   document.getElementById('app').addEventListener('change', (e) => {
-    const el = e.target.closest('[data-action="task-due"]');
-    if (!el) return;
-    const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
-    const t = ws && ws.tasks[+el.dataset.task];
-    if (!t) return;
-    const prevDue = t.due;
-    t.due = el.value || null;
-    if (prevDue !== t.due) {
-      const label = t.due ? `set deadline to ${formatDue(t.due)}` : 'cleared deadline';
-      logActivity(ownerName(ws.owner), 'updated task deadline', `"${t.text}": ${label}`);
+    const due = e.target.closest('[data-action="task-due"]');
+    if (due) {
+      const ws = WORKSTREAMS.find(w => w.id === due.dataset.ws);
+      const t = ws && ws.tasks[+due.dataset.task];
+      if (!t) return;
+      const prevDue = t.due;
+      t.due = due.value || null;
+      if (prevDue !== t.due) {
+        const label = t.due ? `set deadline to ${formatDue(t.due)}` : 'cleared deadline';
+        logActivity(ownerName(ws.owner), 'updated task deadline', `"${t.text}": ${label}`);
+      }
+      commitChange();
+      return;
     }
-    commitChange();
+    // Editable <input>/<select> fields (owner reassignment, deliverable URL).
+    const ed = e.target.closest('[data-edit]');
+    if (ed && (ed.tagName === 'INPUT' || ed.tagName === 'SELECT')) {
+      applyEdit(ed.dataset.edit, ed, ed.value);
+    }
   });
+
+  // Inline text editing: commit a contenteditable field when it loses focus.
+  document.getElementById('app').addEventListener('focusout', (e) => {
+    const el = e.target.closest('[data-edit]');
+    if (!el || el.isContentEditable !== true) return;
+    applyEdit(el.dataset.edit, el, el.textContent);
+  });
+
+  // Enter commits a single-line editable field (Shift+Enter / multiline keeps newline).
+  document.getElementById('app').addEventListener('keydown', (e) => {
+    const el = e.target.closest('[data-edit]');
+    if (el && el.isContentEditable && e.key === 'Enter' && el.dataset.multiline !== 'true' && !e.shiftKey) {
+      e.preventDefault();
+      el.blur();
+    }
+  });
+
+  // Apply an inline edit to the data model, log it, and persist.
+  function applyEdit(key, el, raw) {
+    const value = (raw == null ? '' : String(raw)).trim();
+    if (key === 'task-owner') {
+      const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
+      const t = ws && ws.tasks[+el.dataset.task];
+      if (!t) return;
+      const prev = t.owner || ws.owner;
+      if (prev === value) return;
+      t.owner = value;
+      logActivity(ownerName(ws.owner), 'reassigned task', `"${t.text}": ${ownerName(prev)} → ${ownerName(value)}`);
+      commitChange();
+      return;
+    }
+    if (key === 'ws-title') {
+      const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
+      if (!ws) return;
+      if (!value || value === ws.title) { render(); return; }
+      const old = ws.title;
+      ws.title = value;
+      logActivity(ownerName(ws.owner), 'renamed workstream', `${old} → ${value}`);
+      commitChange();
+      return;
+    }
+    if (key === 'risk-name' || key === 'risk-mit') {
+      const r = RISKS[+el.dataset.risk];
+      if (!r) return;
+      const field = key === 'risk-name' ? 'name' : 'mitigation';
+      if (!value || value === r[field]) { render(); return; }
+      r[field] = value;
+      logActivity('Team', 'edited risk', r.name);
+      commitChange();
+      return;
+    }
+    if (key === 'del-kind' || key === 'del-title' || key === 'del-desc' || key === 'del-url') {
+      const d = DELIVERABLES[+el.dataset.del];
+      if (!d) return;
+      const field = key === 'del-kind' ? 'kind' : key === 'del-title' ? 'title' : key === 'del-desc' ? 'description' : 'url';
+      if (value === d[field]) return;
+      if (key !== 'del-url' && !value) { render(); return; }
+      d[field] = value;
+      logActivity('Team', 'edited deliverable', d.title);
+      commitChange();
+      return;
+    }
+  }
 
   // Refresh shared state + activity when returning to the tab.
   document.addEventListener('visibilitychange', () => {

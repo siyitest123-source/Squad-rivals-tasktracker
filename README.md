@@ -14,8 +14,12 @@ same live state. No login.
   deadline).
 - **Remove tasks** with the × on each row.
 - **Inline deadlines** — edit any task's date right on the row.
+- **Reassign tasks** — each task has an owner dropdown (per-task reassignment).
+- **Editable text** — click to edit workstream titles, risk names + mitigations,
+  and deliverable kind / title / description / link.
 - **Activity log** (Activity tab) — who changed what and when, grouped by date,
   with colored avatars and relative timestamps. Auto-refreshes every 10s.
+- **By Person** tab is a simple team roster (names + roles).
 - Every change saves automatically and is shared with the whole team.
 
 ## How it works
