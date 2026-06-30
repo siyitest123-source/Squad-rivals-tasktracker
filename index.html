@@ -48,95 +48,6 @@
     z-index: 0;
   }
 
-  /* ============ PASSWORD GATE ============ */
-  .gate {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
-  .gate.hidden { display: none; }
-  .gate-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 40px 36px;
-    max-width: 420px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  }
-  .gate-brand {
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 16px;
-  }
-  .gate-card h1 {
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin-bottom: 8px;
-  }
-  .gate-card h1 .em { color: var(--accent-2); font-style: italic; font-weight: 500; }
-  .gate-card p {
-    color: var(--text-dim);
-    font-size: 14px;
-    margin-bottom: 28px;
-  }
-  .gate-input {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--border-strong);
-    border-radius: 6px;
-    background: var(--surface-2);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .gate-input:focus {
-    border-color: var(--accent-2);
-    background: var(--surface);
-  }
-  .gate-btn {
-    width: 100%;
-    margin-top: 14px;
-    padding: 12px;
-    background: var(--text);
-    color: var(--surface);
-    border: none;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .gate-btn:hover { background: #333; }
-  .gate-error {
-    color: var(--accent);
-    font-size: 12px;
-    margin-top: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    min-height: 16px;
-  }
-  .gate-note {
-    margin-top: 24px;
-    font-size: 11px;
-    color: var(--text-faint);
-    font-family: 'JetBrains Mono', monospace;
-  }
-
   /* ============ MAIN APP ============ */
   .container {
     position: relative;
@@ -749,34 +660,55 @@
   @media (max-width: 768px) {
     .risks-list li { grid-template-columns: 1fr; gap: 6px; }
   }
+  /* ── live-edit additions ── */
+  .tag.newtask { cursor:pointer; border:0; background:var(--accent); color:#fff; font-weight:600; font-family:inherit; }
+  .tag.newtask:hover { filter:brightness(1.06); }
+  .task-main { flex:1; min-width:0; }
+  .task-controls { display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .due-input { font-family:'JetBrains Mono',monospace; font-size:11px; border:1px solid var(--border); border-radius:6px; padding:2px 6px; background:var(--surface); color:var(--text-dim); }
+  .task-remove { border:0; background:transparent; color:var(--text-faint); font-size:16px; line-height:1; cursor:pointer; padding:2px 7px; border-radius:6px; }
+  .task-remove:hover { background:rgba(214,56,98,0.12); color:var(--blocked); }
+  /* modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(20,20,20,0.45); z-index:2000; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .modal-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; width:min(440px,100%); box-shadow:0 20px 60px rgba(0,0,0,0.2); }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .modal-title { font-weight:700; font-size:18px; }
+  .modal-close { border:0; background:transparent; font-size:16px; cursor:pointer; color:var(--text-faint); }
+  .modal-label { display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin:12px 0 6px; }
+  .modal-textarea, .modal-select, .modal-date { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-family:inherit; font-size:14px; background:var(--surface-2); color:var(--text); }
+  .modal-error { color:var(--blocked); font-size:13px; min-height:18px; margin-top:8px; }
+  .modal-submit { width:100%; margin-top:10px; border:0; border-radius:10px; padding:11px; background:var(--accent); color:#fff; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
+  .modal-submit:hover { filter:brightness(1.06); }
+  /* activity */
+  .activity-log { display:flex; flex-direction:column; }
+  .activity-date-sep { font-size:11px; font-weight:700; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.05em; margin:18px 0 6px; }
+  .activity-entry { display:flex; gap:12px; padding:10px 12px; border-radius:10px; }
+  .activity-entry:hover { background:var(--surface-2); }
+  .activity-avatar { width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px; }
+  .activity-body { flex:1; min-width:0; }
+  .activity-line { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .activity-actor { font-weight:600; }
+  .activity-icon { color:var(--text-faint); }
+  .activity-action { color:var(--text-dim); }
+  .activity-time { color:var(--text-faint); font-size:12px; margin-left:auto; }
+  .activity-detail { color:var(--text-dim); font-size:13px; margin-top:2px; }
+  .activity-empty { color:var(--text-faint); padding:40px; text-align:center; }
 </style>
 </head>
 <body>
 
-<!-- ============ PASSWORD GATE ============ -->
-<div class="gate" id="gate">
-  <div class="gate-card">
-    <div class="gate-brand">Builders Only</div>
-    <h1>Squad <span class="em">Rivals</span></h1>
-    <p>Internal team workflow tracker. Enter the team password to continue.</p>
-    <input type="password" class="gate-input" id="gate-input" placeholder="Password" autofocus>
-    <button class="gate-btn" id="gate-btn">Unlock</button>
-    <div class="gate-error" id="gate-error"></div>
-  </div>
-</div>
-
 <!-- ============ MAIN APP ============ -->
-<div class="container" id="app" style="display:none;">
+<div class="container" id="app">
   <header>
     <div>
       <div class="brand">Socios Squad Rivals · Build Tracker</div>
       <h1>Team <span class="em">Workflow</span></h1>
-      <p class="subtitle" id="subtitle">How the team's work connects across workstreams. Updated manually — edit the data block in index.html and commit.</p>
+      <p class="subtitle" id="subtitle">Live shared tracker. Click any status to cycle it, edit deadlines inline, add or remove tasks — every change saves and is shared with the team.</p>
     </div>
     <div class="header-meta">
       <div class="tag deadline" id="deadline-tag">DDL · May 15, 2026</div>
       <div class="tag" id="last-updated">Updated —</div>
-      <div class="tag logout" id="logout-btn">Lock</div>
+      <button class="tag newtask" id="new-task-btn">+ New Task</button>
     </div>
   </header>
 
@@ -814,6 +746,7 @@
     <button class="tab-btn" data-view="pipelines">Pipelines</button>
     <button class="tab-btn" data-view="deliverables">Deliverables</button>
     <button class="tab-btn" data-view="risks">Risks</button>
+    <button class="tab-btn" data-view="activity">Activity</button>
   </div>
 
   <!-- Workstreams view -->
@@ -847,8 +780,31 @@
     </div>
   </div>
 
+  <!-- Activity view -->
+  <div class="view" id="view-activity">
+    <div class="activity-log" id="activity-list"></div>
+  </div>
+
   <div class="footnote">
-    <strong>How to update.</strong> Open <code style="background:var(--bg-2); padding:2px 5px; border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:11px;">index.html</code>, find the <code style="background:var(--bg-2); padding:2px 5px; border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:11px;">DATA</code> block near the top of the &lt;script&gt; section, edit the JSON, commit. GitHub Pages will redeploy in ~60 seconds. Task statuses: <code>done</code>, <code>doing</code>, <code>review</code>, <code>planned</code>, <code>blocked</code>.
+    <strong>Live tracker.</strong> Click any task row, workstream badge, or pipeline step to cycle its status. Click a task's date to set or change a deadline, use <strong>×</strong> to remove a task, and <strong>+ New Task</strong> to add one. Every change is saved to a shared database and logged in the <strong>Activity</strong> tab. Statuses: <code>done</code>, <code>doing</code>, <code>review</code>, <code>planned</code>, <code>blocked</code>.
+  </div>
+</div>
+
+<!-- ============ NEW TASK MODAL ============ -->
+<div class="modal-overlay" id="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">New Task Assignment</div>
+      <button class="modal-close" id="modal-close" title="Close">✕</button>
+    </div>
+    <label class="modal-label">Task description</label>
+    <textarea class="modal-textarea" id="modal-text" placeholder="Describe the task…" rows="3"></textarea>
+    <label class="modal-label">Workstream</label>
+    <select class="modal-select" id="modal-ws"></select>
+    <label class="modal-label">Deadline (optional)</label>
+    <input type="date" class="modal-date" id="modal-due">
+    <div class="modal-error" id="modal-error"></div>
+    <button class="modal-submit" id="modal-submit">Add Task</button>
   </div>
 </div>
 
@@ -860,11 +816,6 @@
    ║   the tracker. Save the file, commit, push to GitHub.    ║
    ╚══════════════════════════════════════════════════════════╝
    ============================================================ */
-
-// ─── PASSWORD ───────────────────────────────────────────────
-// Change this to whatever you want. Note: this is a soft gate,
-// not real security. Anyone who views source can read it.
-const PASSWORD = "chiliz2026";
 
 // ─── LAST UPDATED ───────────────────────────────────────────
 let LAST_UPDATED = "May 02, 2026";
@@ -901,7 +852,7 @@ let WORKSTREAMS = [
     status: "doing",
     tasks: [
       { text: "Onboarding flow (3 cards + auto-fill)", status: "doing" },
-      { text: "5-slot pitch squad builder", status: "doing", due: "May 10" },
+      { text: "5-slot pitch squad builder", status: "doing", due: "2026-05-10" },
       { text: "Rivals lobby with scout and challenge", status: "doing" },
       { text: "Matchup preview and settlement screens", status: "doing" },
       { text: "Leaderboard with promotion tension", status: "doing" },
@@ -1089,11 +1040,14 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <ul class="ws-tasks">
           ${ws.tasks.map((t, ti) => `
-            <li data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status">
-              <div class="task-check ${t.status}"></div>
-              <div>
-                <div class="task-text ${t.status === 'done' ? 'done' : ''}">${t.text}</div>
-                ${t.due ? `<div class="task-meta"><span class="due ${t.status === 'done' ? 'soft' : ''}">Due ${t.due}</span></div>` : ''}
+            <li>
+              <div class="task-check ${t.status}" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status"></div>
+              <div class="task-main" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status">
+                <div class="task-text ${t.status === 'done' ? 'done' : ''}">${escapeHtml(t.text)}</div>
+              </div>
+              <div class="task-controls">
+                <input type="date" class="due-input" data-action="task-due" data-ws="${ws.id}" data-task="${ti}" value="${t.due || ''}" title="Set or change deadline">
+                <button class="task-remove" data-action="task-remove" data-ws="${ws.id}" data-task="${ti}" title="Remove task">×</button>
               </div>
             </li>
           `).join('')}
@@ -1153,10 +1107,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <ul class="person-tasks">
               ${current.map(t => `
                 <li>
-                  <div class="person-task-text">${t.text}</div>
+                  <div class="person-task-text">${escapeHtml(t.text)}</div>
                   <div class="person-task-meta">
                     <span class="ws-pill">${t.ws}</span>
-                    ${t.due ? `<span>Due ${t.due}</span>` : ''}
+                    ${t.due ? `<span>Due ${formatDue(t.due)}</span>` : ''}
                   </div>
                 </li>
               `).join('')}
@@ -1228,6 +1182,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderPipelines();
     renderDeliverables();
     renderRisks();
+    renderActivity();
   }
 
   // ─── SHARED PERSISTENCE (Vercel serverless + Postgres) ──────
@@ -1317,62 +1272,163 @@ document.addEventListener('DOMContentLoaded', function() {
     saveState();
   }
 
-  // ─── PASSWORD GATE ──────────────────────────────────────────
-  function tryUnlock() {
-    const input = document.getElementById('gate-input');
-    const error = document.getElementById('gate-error');
-    if (input.value === PASSWORD) {
-      sessionStorage.setItem('sr-unlocked', '1');
-      showApp();
-    } else {
-      error.textContent = "Incorrect password. Try again.";
-      input.value = '';
-      input.focus();
+  // ─── HELPERS: escaping, dates, owners ───────────────────────
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
+  function formatDue(due) {
+    if (!due) return '';
+    const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(due) ? due + 'T00:00:00' : due);
+    return isNaN(d.getTime()) ? due : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function ownerName(id) { return personById(id).name; }
+
+  // ─── WORKSTREAM STATUS DERIVATION (matches the API server) ──
+  function recomputeWsStatus(ws) {
+    const allDone = ws.tasks.length > 0 && ws.tasks.every(t => t.status === 'done');
+    const anyDoing = ws.tasks.some(t => t.status === 'doing' || t.status === 'review');
+    ws.status = allDone ? 'done' : (anyDoing ? 'doing' : 'planned');
+  }
+
+  // ─── ACTIVITY LOG ───────────────────────────────────────────
+  let ACTIVITY = [];
+  const ACTIVITY_API = '/api/activity';
+
+  async function fetchActivity() {
+    try {
+      const r = await fetch(ACTIVITY_API, { cache: 'no-store' });
+      if (r.ok) { const j = await r.json(); if (Array.isArray(j)) ACTIVITY = j; }
+    } catch (err) { /* offline — keep what we have */ }
+  }
+
+  function logActivity(actor, action, detail) {
+    // Optimistic: show immediately, then persist in the background.
+    ACTIVITY.unshift({ id: 'tmp' + Date.now(), actor, action, detail: detail || null, created_at: new Date().toISOString() });
+    renderActivity();
+    fetch(ACTIVITY_API, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ actor, action, detail: detail || null }),
+    }).catch(() => {});
+  }
+
+  function actorInitials(name) {
+    return String(name || '?').split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
+  }
+  function actorColor(name) {
+    const colors = ['#c0392b', '#27ae60', '#2980b9', '#8e44ad', '#e67e22', '#16a085'];
+    let h = 0;
+    const s = String(name);
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % colors.length;
+    return colors[h];
+  }
+  function relativeTime(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return days + 'd ago';
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function actionIcon(action) {
+    if (action.includes('added')) return '+';
+    if (action.includes('removed')) return '×';
+    if (action.includes('deadline')) return '◷';
+    if (action.includes('pipeline')) return '→';
+    return '↻';
+  }
+
+  function renderActivity() {
+    const list = document.getElementById('activity-list');
+    if (!list) return;
+    if (!ACTIVITY.length) {
+      list.innerHTML = '<div class="activity-empty">No activity yet. Start making changes — every update will appear here.</div>';
+      return;
     }
+    let lastDate = '';
+    list.innerHTML = ACTIVITY.map(e => {
+      const dateStr = new Date(e.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      const sep = dateStr !== lastDate ? `<div class="activity-date-sep">${dateStr}</div>` : '';
+      lastDate = dateStr;
+      return `${sep}
+        <div class="activity-entry">
+          <div class="activity-avatar" style="background:${actorColor(e.actor)}" title="${escapeHtml(e.actor)}">${escapeHtml(actorInitials(e.actor))}</div>
+          <div class="activity-body">
+            <div class="activity-line">
+              <span class="activity-actor">${escapeHtml(e.actor)}</span>
+              <span class="activity-icon">${actionIcon(e.action)}</span>
+              <span class="activity-action">${escapeHtml(e.action)}</span>
+              <span class="activity-time">${relativeTime(e.created_at)}</span>
+            </div>
+            ${e.detail ? `<div class="activity-detail">${escapeHtml(e.detail)}</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
   }
 
-  function showApp() {
-    document.getElementById('gate').classList.add('hidden');
-    document.getElementById('app').style.display = 'block';
-    loadState();
+  // ─── NEW TASK MODAL ─────────────────────────────────────────
+  function openModal() {
+    const sel = document.getElementById('modal-ws');
+    sel.innerHTML = WORKSTREAMS.map(ws => `<option value="${ws.id}">${escapeHtml(ws.title)} — ${escapeHtml(ownerName(ws.owner))}</option>`).join('');
+    document.getElementById('modal-text').value = '';
+    document.getElementById('modal-due').value = '';
+    document.getElementById('modal-error').textContent = '';
+    document.getElementById('modal-overlay').style.display = 'flex';
+    document.getElementById('modal-text').focus();
   }
-
-  function lock() {
-    sessionStorage.removeItem('sr-unlocked');
-    document.getElementById('gate').classList.remove('hidden');
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('gate-input').value = '';
-    document.getElementById('gate-error').textContent = '';
-    document.getElementById('gate-input').focus();
+  function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+  function submitTask() {
+    const text = document.getElementById('modal-text').value.trim();
+    const wsId = document.getElementById('modal-ws').value;
+    const due = document.getElementById('modal-due').value || null;
+    const err = document.getElementById('modal-error');
+    if (!text) { err.textContent = 'Please enter a task description.'; return; }
+    const ws = WORKSTREAMS.find(w => w.id === wsId);
+    if (!ws) { err.textContent = 'Please choose a workstream.'; return; }
+    ws.tasks.push({ text, status: 'planned', due });
+    recomputeWsStatus(ws);
+    logActivity(ownerName(ws.owner), 'added new task', `"${text}" → ${ws.title}`);
+    commitChange();
+    closeModal();
   }
 
   // ─── EVENT BINDINGS ─────────────────────────────────────────
-  document.getElementById('gate-btn').addEventListener('click', tryUnlock);
-  document.getElementById('gate-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') tryUnlock();
+  let currentView = 'workstreams';
+
+  document.getElementById('new-task-btn').addEventListener('click', openModal);
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-submit').addEventListener('click', submitTask);
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'modal-overlay') closeModal();
   });
-  document.getElementById('logout-btn').addEventListener('click', lock);
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('view-' + btn.dataset.view).classList.add('active');
+      currentView = btn.dataset.view;
+      document.getElementById('view-' + currentView).classList.add('active');
+      if (currentView === 'activity') fetchActivity().then(renderActivity);
     });
   });
 
-  // ─── EDIT: click a status to cycle it (saves + shares) ──────
+  // Clickable affordances for editable elements.
   (function injectEditStyles() {
     const css = document.createElement('style');
     css.textContent =
-      '[data-action]{cursor:pointer;}' +
-      '.ws-tasks li[data-action]{transition:background .12s;border-radius:8px;}' +
-      '.ws-tasks li[data-action]:hover{background:var(--surface-2);}' +
+      '[data-action="task-status"],[data-action="ws-status"],[data-action="step-status"]{cursor:pointer;}' +
+      '.ws-tasks li:hover{background:var(--surface-2);border-radius:8px;}' +
       '.ws-status[data-action]:hover,.pipeline-step[data-action]:hover{filter:brightness(.96);}';
     document.head.appendChild(css);
   })();
 
+  // Click: cycle statuses / remove tasks (event delegation).
   document.getElementById('app').addEventListener('click', (e) => {
     const el = e.target.closest('[data-action]');
     if (!el) return;
@@ -1380,29 +1436,74 @@ document.addEventListener('DOMContentLoaded', function() {
     if (a === 'task-status') {
       const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
       const t = ws && ws.tasks[+el.dataset.task];
-      if (t) { t.status = cycleStatus(t.status); commitChange(); }
+      if (!t) return;
+      const prev = t.status;
+      t.status = cycleStatus(t.status);
+      recomputeWsStatus(ws);
+      logActivity(ownerName(ws.owner), 'changed task status', `"${t.text}": ${prev} → ${t.status}`);
+      commitChange();
     } else if (a === 'ws-status') {
       const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
-      if (ws) { ws.status = cycleStatus(ws.status); commitChange(); }
+      if (!ws) return;
+      const prev = ws.status;
+      ws.status = cycleStatus(ws.status);
+      logActivity(ownerName(ws.owner), 'changed workstream status', `${ws.title}: ${prev} → ${ws.status}`);
+      commitChange();
     } else if (a === 'step-status') {
       const p = PIPELINES[+el.dataset.pipe];
       const st = p && p.steps[+el.dataset.step];
-      if (st) { st.status = cycleStatus(st.status); commitChange(); }
+      if (!st) return;
+      const prev = st.status;
+      st.status = cycleStatus(st.status);
+      logActivity(ownerName(st.owner), 'advanced pipeline step', `"${st.title}": ${prev} → ${st.status}`);
+      commitChange();
+    } else if (a === 'task-remove') {
+      const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
+      const idx = +el.dataset.task;
+      const t = ws && ws.tasks[idx];
+      if (!t) return;
+      if (!confirm(`Remove task "${t.text}"?`)) return;
+      ws.tasks.splice(idx, 1);
+      recomputeWsStatus(ws);
+      logActivity(ownerName(ws.owner), 'removed task', `"${t.text}" from ${ws.title}`);
+      commitChange();
     }
   });
 
-  // Pull the latest shared state when returning to the tab.
+  // Change: inline deadline editing on task rows.
+  document.getElementById('app').addEventListener('change', (e) => {
+    const el = e.target.closest('[data-action="task-due"]');
+    if (!el) return;
+    const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
+    const t = ws && ws.tasks[+el.dataset.task];
+    if (!t) return;
+    const prevDue = t.due;
+    t.due = el.value || null;
+    if (prevDue !== t.due) {
+      const label = t.due ? `set deadline to ${formatDue(t.due)}` : 'cleared deadline';
+      logActivity(ownerName(ws.owner), 'updated task deadline', `"${t.text}": ${label}`);
+    }
+    commitChange();
+  });
+
+  // Refresh shared state + activity when returning to the tab.
   document.addEventListener('visibilitychange', () => {
-    const app = document.getElementById('app');
-    if (document.visibilityState === 'visible' && app && app.style.display !== 'none') {
+    if (document.visibilityState === 'visible') {
       loadState();
+      if (currentView === 'activity') fetchActivity().then(renderActivity);
     }
   });
 
-  // ─── AUTO-UNLOCK IF SESSION IS REMEMBERED ──────────────────
-  if (sessionStorage.getItem('sr-unlocked') === '1') {
-    showApp();
-  }
+  // Poll the activity log every 10s while the Activity tab is open.
+  setInterval(() => {
+    if (currentView === 'activity' && document.visibilityState === 'visible') {
+      fetchActivity().then(renderActivity);
+    }
+  }, 10000);
+
+  // ─── INIT ───────────────────────────────────────────────────
+  fetchActivity().then(renderActivity);
+  loadState();
 
 });
 </script>
