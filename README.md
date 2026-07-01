@@ -33,13 +33,35 @@ same live state. No login.
 If the database isn't reachable, the dashboard still loads with the built-in
 defaults — it shows "Offline — changes not saved" and edits won't persist.
 
-## Deploy on Vercel
+## Deploy on Vercel + connect the database
 
-1. Import this repo in Vercel (no build settings needed — it's static + a function).
-2. **Storage → Create Database → Postgres**, connect it to the project. This sets
-   `POSTGRES_URL` / `DATABASE_URL` automatically.
-3. Deploy. On first load the dashboard seeds the database with the defaults from
-   `index.html`. Done.
+Until a database is connected, the site loads but shows "Offline — changes not
+saved". These steps turn on shared saving + the activity log.
+
+1. **Import the repo.** Vercel → **Add New → Project** → import
+   `Squad-rivals-tasktracker`. No build settings needed (it's a static file plus
+   serverless functions). Click **Deploy**.
+2. **Create a database.** Open the project → **Storage** tab → **Create Database**
+   → **Postgres** (Neon) → pick a region near your users → **Create**.
+3. **Connect it to the project.** On the database page click **Connect Project**
+   (or **Connect** during creation) and select this project + the
+   **Production** (and Preview) environments. This automatically adds the
+   `POSTGRES_URL` / `DATABASE_URL` environment variables — you do **not** copy any
+   secret by hand.
+4. **Redeploy so the functions see the new variables.** Project → **Deployments**
+   → the latest one → **⋯ → Redeploy**. (Env vars only reach the serverless
+   functions on a fresh deploy.)
+5. **Open the site.** On first load it auto-creates its tables (`dashboard_state`,
+   `activity_log`) and seeds the dashboard from the defaults in `index.html`.
+   There is **no migration step**.
+
+That's it. The header will now say "All changes saved", every edit (statuses,
+deadlines, add/remove tasks, reassignment, workstream/risk/deliverable text) is
+saved to Postgres and shared with everyone, and each change is recorded in the
+**Activity** tab.
+
+If it still says "Offline": confirm the database shows this project under
+**Connected Projects**, and that you redeployed *after* connecting it.
 
 ## Editing defaults
 

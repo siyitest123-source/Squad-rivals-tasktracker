@@ -715,7 +715,6 @@
       <p class="subtitle" id="subtitle">Live shared tracker. Click any status to cycle it, edit deadlines inline, add or remove tasks — every change saves and is shared with the team.</p>
     </div>
     <div class="header-meta">
-      <div class="tag deadline" id="deadline-tag">DDL · May 15, 2026</div>
       <div class="tag" id="last-updated">Updated —</div>
       <button class="tag newtask" id="new-task-btn">+ New Task</button>
     </div>
@@ -1034,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="ws-head">
           <div>
             <div class="ws-title editable" contenteditable="true" data-edit="ws-title" data-ws="${ws.id}" title="Click to edit">${escapeHtml(ws.title)}</div>
-            <div class="ws-owner">${escapeHtml(owner.name)}${owner.role ? ' · ' + escapeHtml(owner.role) : ''}</div>
+            <div class="ws-owner">${escapeHtml(owner.name)}</div>
           </div>
           <div class="ws-status ${ws.status}" data-action="ws-status" data-ws="${ws.id}" title="Click to change status">${STATUS_LABEL[ws.status]}</div>
         </div>
@@ -1087,7 +1086,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="person-avatar">${initials(person.name)}</div>
             <div>
               <div class="person-name">${escapeHtml(person.name)}</div>
-              <div class="person-role">${escapeHtml(person.role)}</div>
             </div>
           </div>
         </div>
