@@ -852,7 +852,7 @@ let WORKSTREAMS = [
     id: "product-design",
     title: "Product / Game Design",
     owner: "altug",
-    status: "doing",
+    status: "done",
     tasks: [
       { text: "Finalise game loop & core mechanics", status: "doing" },
       { text: "Define scoring model and reward tiers", status: "doing" },
@@ -864,7 +864,7 @@ let WORKSTREAMS = [
     id: "ux-ui",
     title: "UX/UI & Frontend Design",
     owner: "bruno",
-    status: "doing",
+    status: "done",
     tasks: [
       { text: "Onboarding flow (3 cards + auto-fill)", status: "doing" },
       { text: "5-slot pitch squad builder", status: "doing", due: "2026-05-10" },
@@ -893,7 +893,7 @@ let WORKSTREAMS = [
     id: "ai-assistant",
     title: "AI Assistant Concept",
     owner: "altug",
-    status: "planned",
+    status: "done",
     tasks: [
       { text: "Define Assistant Manager scope (auto-rotation, captain pick)", status: "doing" },
       { text: "Sketch unlock moment and value prop", status: "planned" },
@@ -1018,8 +1018,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const total = ws.tasks.length;
     const doneTasks = ws.tasks.filter(t => t.status === 'done').length;
     const pct = total > 0 ? Math.round((doneTasks / total) * 100) : 0;
-    // Completed tasks live in the Archive tab, so only show active ones here.
-    const activeRows = ws.tasks.map((t, ti) => t.status === 'done' ? '' : taskRowHtml(ws, t, ti)).join('');
+    // A done workstream is archived — show all its tasks. Otherwise show only
+    // active ones (completed individual tasks live in the Archive tab).
+    const archived = ws.status === 'done';
+    const rows = ws.tasks.map((t, ti) => (!archived && t.status === 'done') ? '' : taskRowHtml(ws, t, ti)).join('');
 
     return `
       <div class="workstream">
@@ -1040,33 +1042,49 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
         </div>
         <ul class="ws-tasks">
-          ${activeRows || '<li class="ws-empty">No active tasks — completed items are in Archive.</li>'}
+          ${rows || '<li class="ws-empty">No active tasks — completed items are in Archive.</li>'}
         </ul>
       </div>
     `;
   }
 
   function renderWorkstreams() {
-    document.getElementById('ws-active').innerHTML = WORKSTREAMS.map(renderWorkstreamCard).join('');
+    // Done workstreams move to the Archive tab.
+    const active = WORKSTREAMS.filter(ws => ws.status !== 'done');
+    document.getElementById('ws-active').innerHTML = active.map(renderWorkstreamCard).join('');
     document.getElementById('ws-done').innerHTML = '';
     document.getElementById('completed-header').style.display = 'none';
   }
 
-  // ─── ARCHIVE VIEW (completed tasks) ─────────────────────────
+  // ─── ARCHIVE VIEW (completed workstreams + completed tasks) ──
   function renderArchive() {
     let html = '';
-    WORKSTREAMS.forEach(ws => {
+
+    // Completed workstreams (whole workstream marked done).
+    const doneWs = WORKSTREAMS.filter(ws => ws.status === 'done');
+    if (doneWs.length) {
+      html += '<div class="section-header">Completed workstreams</div>'
+        + '<div class="workstreams-grid">' + doneWs.map(renderWorkstreamCard).join('') + '</div>';
+    }
+
+    // Completed individual tasks from still-active workstreams.
+    const groups = [];
+    WORKSTREAMS.filter(ws => ws.status !== 'done').forEach(ws => {
       const count = ws.tasks.filter(t => t.status === 'done').length;
       if (!count) return;
       const rows = ws.tasks.map((t, ti) => t.status === 'done' ? taskRowHtml(ws, t, ti) : '').join('');
-      html += `
+      groups.push(`
         <div class="archive-group">
           <div class="archive-group-head">${escapeHtml(ws.title)} · ${count} completed</div>
           <ul class="ws-tasks">${rows}</ul>
-        </div>`;
+        </div>`);
     });
+    if (groups.length) {
+      html += '<div class="section-header">Completed tasks</div>' + groups.join('');
+    }
+
     document.getElementById('archive-list').innerHTML = html
-      || '<div class="activity-empty">No completed tasks yet. Cycle a task to “Done” and it moves here.</div>';
+      || '<div class="activity-empty">Nothing archived yet. Mark a task or workstream “Done” and it moves here.</div>';
   }
 
   // ─── PEOPLE VIEW (tasks per person) ─────────────────────────
