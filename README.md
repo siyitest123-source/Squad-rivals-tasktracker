@@ -1,7 +1,7 @@
 # Squad Rivals — Team Workflow Tracker
 
 A single-page team task tracker for Squad Rivals. Workstreams, per-person views,
-pipelines, deliverables, risks, and an activity log. **Everything is editable
+deliverables, an archive, and an activity log. **Everything is editable
 in-browser and saved to a shared Postgres database**, so every teammate sees the
 same live state. No login.
 
@@ -15,11 +15,13 @@ same live state. No login.
 - **Remove tasks** with the × on each row.
 - **Inline deadlines** — edit any task's date right on the row.
 - **Reassign tasks** — each task has an owner dropdown (per-task reassignment).
+- **Categories** — assign each new task a category (Product / UI/UX / Content / custom).
+- **Archive** — completed tasks automatically move to the Archive tab.
 - **Editable text** — click to edit workstream titles, risk names + mitigations,
   and deliverable kind / title / description / link.
 - **Activity log** (Activity tab) — who changed what and when, grouped by date,
   with colored avatars and relative timestamps. Auto-refreshes every 10s.
-- **By Person** tab is a simple team roster (names + roles).
+- **By Person** tab lists each person with the tasks assigned to them.
 - Every change saves automatically and is shared with the whole team.
 
 ## How it works

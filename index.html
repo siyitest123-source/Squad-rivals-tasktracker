@@ -675,7 +675,7 @@
   .modal-title { font-weight:700; font-size:18px; }
   .modal-close { border:0; background:transparent; font-size:16px; cursor:pointer; color:var(--text-faint); }
   .modal-label { display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin:12px 0 6px; }
-  .modal-textarea, .modal-select, .modal-date { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-family:inherit; font-size:14px; background:var(--surface-2); color:var(--text); }
+  .modal-textarea, .modal-select, .modal-date, .modal-input { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-family:inherit; font-size:14px; background:var(--surface-2); color:var(--text); }
   .modal-error { color:var(--blocked); font-size:13px; min-height:18px; margin-top:8px; }
   .modal-submit { width:100%; margin-top:10px; border:0; border-radius:10px; padding:11px; background:var(--accent); color:#fff; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
   .modal-submit:hover { filter:brightness(1.06); }
@@ -702,6 +702,13 @@
   .deliverable-arrow { text-decoration:none; color:var(--text-faint); font-size:16px; }
   .deliverable-arrow:hover { color:var(--accent); }
   .deliverable-url-input { width:100%; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11px; border:1px solid var(--border); border-radius:6px; padding:5px 7px; background:var(--surface-2); color:var(--accent-5); }
+  /* category pill + archive + by-person meta */
+  .cat-pill { display:inline-block; margin-top:4px; font-size:10px; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; color:var(--accent-4); background:rgba(91,74,212,0.10); border-radius:5px; padding:2px 7px; }
+  .ws-empty { list-style:none; color:var(--text-faint); font-size:13px; padding:8px 4px; }
+  .archive-group { margin-bottom:22px; }
+  .archive-group-head { font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; }
+  .archive-group .ws-tasks { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 14px; }
+  .pmeta { color:var(--text-faint); font-size:12px; }
 </style>
 </head>
 <body>
@@ -710,7 +717,7 @@
 <div class="container" id="app">
   <header>
     <div>
-      <div class="brand">Socios Squad Rivals · Build Tracker</div>
+      <div class="brand">Squad Rivals · Build Tracker</div>
       <h1>Team <span class="em">Workflow</span></h1>
       <p class="subtitle" id="subtitle">Live shared tracker. Click any status to cycle it, edit deadlines inline, add or remove tasks — every change saves and is shared with the team.</p>
     </div>
@@ -750,10 +757,9 @@
 
   <div class="tabs">
     <button class="tab-btn active" data-view="workstreams">Workstreams</button>
+    <button class="tab-btn" data-view="archive">Archive</button>
     <button class="tab-btn" data-view="people">By Person</button>
-    <button class="tab-btn" data-view="pipelines">Pipelines</button>
     <button class="tab-btn" data-view="deliverables">Deliverables</button>
-    <button class="tab-btn" data-view="risks">Risks</button>
     <button class="tab-btn" data-view="activity">Activity</button>
   </div>
 
@@ -762,8 +768,13 @@
     <div class="section-header">In Progress &amp; Planned</div>
     <div class="workstreams-grid" id="ws-active"></div>
 
-    <div class="section-header" id="completed-header" style="display:none;">Completed</div>
+    <div class="section-header" id="completed-header" style="display:none;">Completed workstreams</div>
     <div class="workstreams-grid" id="ws-done"></div>
+  </div>
+
+  <!-- Archive view (completed tasks) -->
+  <div class="view" id="view-archive">
+    <div class="archive-list" id="archive-list"></div>
   </div>
 
   <!-- People view -->
@@ -771,21 +782,9 @@
     <div class="people-grid" id="people-grid"></div>
   </div>
 
-  <!-- Pipelines view -->
-  <div class="view" id="view-pipelines">
-    <div id="pipelines-list"></div>
-  </div>
-
   <!-- Deliverables view -->
   <div class="view" id="view-deliverables">
     <div id="deliverables-list"></div>
-  </div>
-
-  <!-- Risks view -->
-  <div class="view" id="view-risks">
-    <div class="risks-panel">
-      <ul class="risks-list" id="risks-list"></ul>
-    </div>
   </div>
 
   <!-- Activity view -->
@@ -794,7 +793,7 @@
   </div>
 
   <div class="footnote">
-    <strong>Live tracker.</strong> Click any task row, workstream badge, or pipeline step to cycle its status. Click a task's date to set or change a deadline, use <strong>×</strong> to remove a task, and <strong>+ New Task</strong> to add one. Every change is saved to a shared database and logged in the <strong>Activity</strong> tab. Statuses: <code>done</code>, <code>doing</code>, <code>review</code>, <code>planned</code>, <code>blocked</code>.
+    <strong>Live tracker.</strong> Click any task row or workstream badge to cycle its status — completed tasks move to the <strong>Archive</strong> tab. Click a task's date to set a deadline, use <strong>×</strong> to remove a task, and <strong>+ New Task</strong> to add one with a category. Every change is saved to a shared database and logged in the <strong>Activity</strong> tab.
   </div>
 </div>
 
@@ -809,6 +808,14 @@
     <textarea class="modal-textarea" id="modal-text" placeholder="Describe the task…" rows="3"></textarea>
     <label class="modal-label">Assign to</label>
     <select class="modal-select" id="modal-ws"></select>
+    <label class="modal-label">Category</label>
+    <select class="modal-select" id="modal-category">
+      <option value="Product">Product</option>
+      <option value="UI/UX">UI/UX</option>
+      <option value="Content">Content</option>
+      <option value="Other">Other…</option>
+    </select>
+    <input type="text" class="modal-input" id="modal-category-other" placeholder="Enter a custom category" style="display:none;margin-top:8px;">
     <label class="modal-label">Deadline (optional)</label>
     <input type="date" class="modal-date" id="modal-due">
     <div class="modal-error" id="modal-error"></div>
@@ -910,32 +917,6 @@ let WORKSTREAMS = [
 
 ];
 
-// ─── PIPELINES ──────────────────────────────────────────────
-// Show how work connects across people. Each step references a
-// person by id and describes what they're delivering.
-let PIPELINES = [
-  {
-    title: "Pipeline 1 · Squad Rivals MVP Build",
-    description: "Product design feeds UX. Economy work runs in parallel and surfaces in the rewards and user profile screens.",
-    steps: [
-      { owner: "altug", title: "Game loop + scoring locked", status: "doing" },
-      { owner: "bruno", title: "UX flows + visual design", status: "doing" },
-      { owner: "siyi",  title: "Pricing + rev-share design", status: "doing" },
-      { owner: "siyi",  title: "Economy data into rewards/profile", status: "planned" },
-    ]
-  },
-  {
-    title: "Pipeline 2 · Demo Narrative",
-    description: "Once the design + economy come together, the pitch comes together. Assistant Manager concept can ship as a 'preview unlock' state without full implementation.",
-    steps: [
-      { owner: "bruno", title: "Polished UX flows ready", status: "planned" },
-      { owner: "altug", title: "AM concept + unlock state", status: "planned" },
-      { owner: "unassigned", title: "Demo script + screenshots", status: "planned" },
-      { owner: "siyi",  title: "Final review + legal copy pass", status: "planned" },
-    ]
-  },
-];
-
 // ─── DELIVERABLES ───────────────────────────────────────────
 // Current builds and resources to share with the team.
 // kind: short label like "Mock Game", "Dashboard", "Doc"
@@ -958,17 +939,6 @@ let DELIVERABLES = [
     description: "Interactive revenue model dashboard. Adjust pricing, conversion rates, and CHZ price to see projected revenue.",
     url: "https://siyitest123-source.github.io/squad-rivals-dashboard/",
   },
-];
-
-// ─── RISKS ──────────────────────────────────────────────────
-// From section 11 of the product doc. Edit as the team learns.
-let RISKS = [
-  { name: "Too complex for first-time users", mitigation: "Onboarding checklist, auto-fill squad, clear CTAs, one guided demo path." },
-  { name: "Looks like gambling", mitigation: "Avoid wager/odds language. No token loss based on match outcomes. Packs earned by performance, not chance." },
-  { name: "Pay-to-win concern", mitigation: "Best 10 results count weekly. Paid actions give flexibility, not guaranteed wins." },
-  { name: "Token teams feel forced", mitigation: "Passive teams allow free play. Active teams accelerate progression and unlock better tiers." },
-  { name: "Rewards feel abstract", mitigation: "Connect Reward Points and Performance Packs to familiar Socios rewards and auctions." },
-  { name: "MVP overbuild", mitigation: "Mock chain/data/rewards. Build the narrative and core UX first." },
 ];
 
 /* ============================================================
@@ -1022,11 +992,34 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // ─── WORKSTREAMS VIEW ───────────────────────────────────────
+  // Shared task row (used by Workstreams + Archive).
+  function taskRowHtml(ws, t, ti) {
+    return `
+      <li>
+        <div class="task-check ${t.status}" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status"></div>
+        <div class="task-main" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status">
+          <div class="task-text ${t.status === 'done' ? 'done' : ''}">${escapeHtml(t.text)}</div>
+          ${t.category ? `<span class="cat-pill">${escapeHtml(t.category)}</span>` : ''}
+        </div>
+        <div class="task-controls">
+          <select class="owner-select" data-edit="task-owner" data-ws="${ws.id}" data-task="${ti}" title="Assign to">
+            ${PEOPLE.map(p => `<option value="${p.id}"${(t.owner || ws.owner) === p.id ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+            <option value="unassigned"${(t.owner || ws.owner) === 'unassigned' ? ' selected' : ''}>Unassigned</option>
+          </select>
+          <input type="date" class="due-input" data-action="task-due" data-ws="${ws.id}" data-task="${ti}" value="${t.due || ''}" title="Set or change deadline">
+          <button class="task-remove" data-action="task-remove" data-ws="${ws.id}" data-task="${ti}" title="Remove task">×</button>
+        </div>
+      </li>
+    `;
+  }
+
   function renderWorkstreamCard(ws) {
     const owner = personById(ws.owner);
-    const totalTasks = ws.tasks.length;
+    const total = ws.tasks.length;
     const doneTasks = ws.tasks.filter(t => t.status === 'done').length;
-    const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+    const pct = total > 0 ? Math.round((doneTasks / total) * 100) : 0;
+    // Completed tasks live in the Archive tab, so only show active ones here.
+    const activeRows = ws.tasks.map((t, ti) => t.status === 'done' ? '' : taskRowHtml(ws, t, ti)).join('');
 
     return `
       <div class="workstream">
@@ -1042,88 +1035,79 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="ws-progress-fill" style="width:${pct}%;"></div>
           </div>
           <div class="ws-progress-text">
-            <span>${doneTasks} of ${totalTasks} tasks</span>
+            <span>${doneTasks} of ${total} done</span>
             <span>${pct}%</span>
           </div>
         </div>
         <ul class="ws-tasks">
-          ${ws.tasks.map((t, ti) => `
-            <li>
-              <div class="task-check ${t.status}" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status"></div>
-              <div class="task-main" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status">
-                <div class="task-text ${t.status === 'done' ? 'done' : ''}">${escapeHtml(t.text)}</div>
-              </div>
-              <div class="task-controls">
-                <select class="owner-select" data-edit="task-owner" data-ws="${ws.id}" data-task="${ti}" title="Assign to">
-                  ${PEOPLE.map(p => `<option value="${p.id}"${(t.owner || ws.owner) === p.id ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
-                  <option value="unassigned"${(t.owner || ws.owner) === 'unassigned' ? ' selected' : ''}>Unassigned</option>
-                </select>
-                <input type="date" class="due-input" data-action="task-due" data-ws="${ws.id}" data-task="${ti}" value="${t.due || ''}" title="Set or change deadline">
-                <button class="task-remove" data-action="task-remove" data-ws="${ws.id}" data-task="${ti}" title="Remove task">×</button>
-              </div>
-            </li>
-          `).join('')}
+          ${activeRows || '<li class="ws-empty">No active tasks — completed items are in Archive.</li>'}
         </ul>
       </div>
     `;
   }
 
   function renderWorkstreams() {
-    const active = WORKSTREAMS.filter(ws => ws.status !== 'done');
-    const done = WORKSTREAMS.filter(ws => ws.status === 'done');
-
-    document.getElementById('ws-active').innerHTML = active.map(renderWorkstreamCard).join('');
-    document.getElementById('ws-done').innerHTML = done.map(renderWorkstreamCard).join('');
-    document.getElementById('completed-header').style.display = done.length ? 'flex' : 'none';
+    document.getElementById('ws-active').innerHTML = WORKSTREAMS.map(renderWorkstreamCard).join('');
+    document.getElementById('ws-done').innerHTML = '';
+    document.getElementById('completed-header').style.display = 'none';
   }
 
-  // ─── PEOPLE VIEW ────────────────────────────────────────────
+  // ─── ARCHIVE VIEW (completed tasks) ─────────────────────────
+  function renderArchive() {
+    let html = '';
+    WORKSTREAMS.forEach(ws => {
+      const count = ws.tasks.filter(t => t.status === 'done').length;
+      if (!count) return;
+      const rows = ws.tasks.map((t, ti) => t.status === 'done' ? taskRowHtml(ws, t, ti) : '').join('');
+      html += `
+        <div class="archive-group">
+          <div class="archive-group-head">${escapeHtml(ws.title)} · ${count} completed</div>
+          <ul class="ws-tasks">${rows}</ul>
+        </div>`;
+    });
+    document.getElementById('archive-list').innerHTML = html
+      || '<div class="activity-empty">No completed tasks yet. Cycle a task to “Done” and it moves here.</div>';
+  }
+
+  // ─── PEOPLE VIEW (tasks per person) ─────────────────────────
   function renderPeople() {
     const grid = document.getElementById('people-grid');
-    grid.innerHTML = PEOPLE.map(person => `
+    const buckets = PEOPLE.concat([{ id: 'unassigned', name: 'Unassigned' }]);
+    grid.innerHTML = buckets.map(person => {
+      const tasks = [];
+      WORKSTREAMS.forEach(ws => ws.tasks.forEach(t => {
+        if ((t.owner || ws.owner) === person.id) tasks.push({ t, ws });
+      }));
+      if (person.id === 'unassigned' && tasks.length === 0) return '';
+      const active = tasks.filter(x => x.t.status !== 'done');
+      const doneCount = tasks.length - active.length;
+      return `
         <div class="person-card">
           <div class="person-head">
             <div class="person-avatar">${initials(person.name)}</div>
             <div>
               <div class="person-name">${escapeHtml(person.name)}</div>
+              <div class="person-role">${active.length} active · ${doneCount} done</div>
             </div>
           </div>
+          ${active.length ? `
+            <ul class="person-tasks">
+              ${active.map(({ t, ws }) => `
+                <li>
+                  <div class="person-task-text">${escapeHtml(t.text)}</div>
+                  <div class="person-task-meta">
+                    <span class="ws-pill">${escapeHtml(ws.title)}</span>
+                    ${t.category ? `<span class="cat-pill">${escapeHtml(t.category)}</span>` : ''}
+                    <span class="pmeta">${STATUS_LABEL[t.status]}</span>
+                    ${t.due ? `<span class="pmeta">Due ${formatDue(t.due)}</span>` : ''}
+                  </div>
+                </li>
+              `).join('')}
+            </ul>
+          ` : `<div class="person-current" style="color:var(--text-faint);">No active tasks</div>`}
         </div>
-      `).join('');
-  }
-
-  // ─── PIPELINES VIEW ─────────────────────────────────────────
-  function renderPipelines() {
-    document.getElementById('pipelines-list').innerHTML = PIPELINES.map((p, pi) => `
-      <div class="pipeline">
-        <div class="pipeline-head">
-          <div class="pipeline-title">${p.title}</div>
-          <div class="pipeline-desc">${p.description}</div>
-        </div>
-        <div class="pipeline-flow">
-          ${p.steps.map((s, si) => {
-            const owner = personById(s.owner);
-            return `
-              <div class="pipeline-step ${s.status}" data-action="step-status" data-pipe="${pi}" data-step="${si}" title="Click to change status">
-                <div class="pipeline-step-owner">${owner.name}</div>
-                <div class="pipeline-step-title">${s.title}</div>
-                <div class="pipeline-step-status ${s.status}">${STATUS_LABEL[s.status]}</div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `).join('');
-  }
-
-  // ─── RISKS VIEW ─────────────────────────────────────────────
-  function renderRisks() {
-    document.getElementById('risks-list').innerHTML = RISKS.map((r, ri) => `
-      <li>
-        <div class="risk-name editable" contenteditable="true" data-edit="risk-name" data-risk="${ri}" title="Click to edit">${escapeHtml(r.name)}</div>
-        <div class="risk-mitigation editable" contenteditable="true" data-edit="risk-mit" data-risk="${ri}" data-multiline="true" title="Click to edit">${escapeHtml(r.mitigation)}</div>
-      </li>
-    `).join('');
+      `;
+    }).join('');
   }
 
   // ─── DELIVERABLES VIEW ──────────────────────────────────────
@@ -1149,10 +1133,9 @@ document.addEventListener('DOMContentLoaded', function() {
   function render() {
     renderKPIs();
     renderWorkstreams();
+    renderArchive();
     renderPeople();
-    renderPipelines();
     renderDeliverables();
-    renderRisks();
     renderActivity();
   }
 
@@ -1163,8 +1146,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function snapshot() {
     return {
-      people: PEOPLE, workstreams: WORKSTREAMS, pipelines: PIPELINES,
-      deliverables: DELIVERABLES, risks: RISKS, lastUpdated: LAST_UPDATED,
+      people: PEOPLE, workstreams: WORKSTREAMS,
+      deliverables: DELIVERABLES, lastUpdated: LAST_UPDATED,
     };
   }
 
@@ -1219,9 +1202,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const s = j.state;
           if (Array.isArray(s.people)) PEOPLE = s.people;
           if (Array.isArray(s.workstreams)) WORKSTREAMS = s.workstreams;
-          if (Array.isArray(s.pipelines)) PIPELINES = s.pipelines;
           if (Array.isArray(s.deliverables)) DELIVERABLES = s.deliverables;
-          if (Array.isArray(s.risks)) RISKS = s.risks;
           if (s.lastUpdated) LAST_UPDATED = s.lastUpdated;
           setSaveStatus('saved');
         } else {
@@ -1349,6 +1330,9 @@ document.addEventListener('DOMContentLoaded', function() {
     sel.innerHTML = PEOPLE.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')
       + '<option value="unassigned">Unassigned</option>';
     document.getElementById('modal-text').value = '';
+    document.getElementById('modal-category').value = 'Product';
+    document.getElementById('modal-category-other').value = '';
+    document.getElementById('modal-category-other').style.display = 'none';
     document.getElementById('modal-due').value = '';
     document.getElementById('modal-error').textContent = '';
     document.getElementById('modal-overlay').style.display = 'flex';
@@ -1358,16 +1342,21 @@ document.addEventListener('DOMContentLoaded', function() {
   function submitTask() {
     const text = document.getElementById('modal-text').value.trim();
     const personId = document.getElementById('modal-ws').value;
+    const catSel = document.getElementById('modal-category').value;
+    const category = catSel === 'Other'
+      ? document.getElementById('modal-category-other').value.trim()
+      : catSel;
     const due = document.getElementById('modal-due').value || null;
     const err = document.getElementById('modal-error');
     if (!text) { err.textContent = 'Please enter a task description.'; return; }
+    if (catSel === 'Other' && !category) { err.textContent = 'Please enter a custom category.'; return; }
     // Place the task in the assignee's workstream (or the first one), and stamp
     // the per-task owner so it shows as theirs regardless of grouping.
     const ws = WORKSTREAMS.find(w => w.owner === personId) || WORKSTREAMS[0];
     if (!ws) { err.textContent = 'No workstream available to add the task to.'; return; }
-    ws.tasks.push({ text, status: 'planned', due, owner: personId });
+    ws.tasks.push({ text, status: 'planned', due, owner: personId, category });
     recomputeWsStatus(ws);
-    logActivity(ownerName(personId), 'added new task', `"${text}" → ${ownerName(personId)}`);
+    logActivity(ownerName(personId), 'added new task', `"${text}" [${category}] → ${ownerName(personId)}`);
     commitChange();
     closeModal();
   }
@@ -1380,6 +1369,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modal-submit').addEventListener('click', submitTask);
   document.getElementById('modal-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'modal-overlay') closeModal();
+  });
+  document.getElementById('modal-category').addEventListener('change', (e) => {
+    document.getElementById('modal-category-other').style.display = e.target.value === 'Other' ? 'block' : 'none';
   });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1397,9 +1389,9 @@ document.addEventListener('DOMContentLoaded', function() {
   (function injectEditStyles() {
     const css = document.createElement('style');
     css.textContent =
-      '[data-action="task-status"],[data-action="ws-status"],[data-action="step-status"]{cursor:pointer;}' +
+      '[data-action="task-status"],[data-action="ws-status"]{cursor:pointer;}' +
       '.ws-tasks li:hover{background:var(--surface-2);border-radius:8px;}' +
-      '.ws-status[data-action]:hover,.pipeline-step[data-action]:hover{filter:brightness(.96);}';
+      '.ws-status[data-action]:hover{filter:brightness(.96);}';
     document.head.appendChild(css);
   })();
 
@@ -1423,14 +1415,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const prev = ws.status;
       ws.status = cycleStatus(ws.status);
       logActivity(ownerName(ws.owner), 'changed workstream status', `${ws.title}: ${prev} → ${ws.status}`);
-      commitChange();
-    } else if (a === 'step-status') {
-      const p = PIPELINES[+el.dataset.pipe];
-      const st = p && p.steps[+el.dataset.step];
-      if (!st) return;
-      const prev = st.status;
-      st.status = cycleStatus(st.status);
-      logActivity(ownerName(st.owner), 'advanced pipeline step', `"${st.title}": ${prev} → ${st.status}`);
       commitChange();
     } else if (a === 'task-remove') {
       const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
@@ -1505,16 +1489,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const old = ws.title;
       ws.title = value;
       logActivity(ownerName(ws.owner), 'renamed workstream', `${old} → ${value}`);
-      commitChange();
-      return;
-    }
-    if (key === 'risk-name' || key === 'risk-mit') {
-      const r = RISKS[+el.dataset.risk];
-      if (!r) return;
-      const field = key === 'risk-name' ? 'name' : 'mitigation';
-      if (!value || value === r[field]) { render(); return; }
-      r[field] = value;
-      logActivity('Team', 'edited risk', r.name);
       commitChange();
       return;
     }
