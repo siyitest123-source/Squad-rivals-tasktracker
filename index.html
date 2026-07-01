@@ -807,7 +807,7 @@
     </div>
     <label class="modal-label">Task description</label>
     <textarea class="modal-textarea" id="modal-text" placeholder="Describe the task…" rows="3"></textarea>
-    <label class="modal-label">Workstream</label>
+    <label class="modal-label">Assign to</label>
     <select class="modal-select" id="modal-ws"></select>
     <label class="modal-label">Deadline (optional)</label>
     <input type="date" class="modal-date" id="modal-due">
@@ -1344,8 +1344,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── NEW TASK MODAL ─────────────────────────────────────────
   function openModal() {
+    // Assign by person (names only) — a fresh round of allocation.
     const sel = document.getElementById('modal-ws');
-    sel.innerHTML = WORKSTREAMS.map(ws => `<option value="${ws.id}">${escapeHtml(ws.title)} — ${escapeHtml(ownerName(ws.owner))}</option>`).join('');
+    sel.innerHTML = PEOPLE.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')
+      + '<option value="unassigned">Unassigned</option>';
     document.getElementById('modal-text').value = '';
     document.getElementById('modal-due').value = '';
     document.getElementById('modal-error').textContent = '';
@@ -1355,15 +1357,17 @@ document.addEventListener('DOMContentLoaded', function() {
   function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
   function submitTask() {
     const text = document.getElementById('modal-text').value.trim();
-    const wsId = document.getElementById('modal-ws').value;
+    const personId = document.getElementById('modal-ws').value;
     const due = document.getElementById('modal-due').value || null;
     const err = document.getElementById('modal-error');
     if (!text) { err.textContent = 'Please enter a task description.'; return; }
-    const ws = WORKSTREAMS.find(w => w.id === wsId);
-    if (!ws) { err.textContent = 'Please choose a workstream.'; return; }
-    ws.tasks.push({ text, status: 'planned', due });
+    // Place the task in the assignee's workstream (or the first one), and stamp
+    // the per-task owner so it shows as theirs regardless of grouping.
+    const ws = WORKSTREAMS.find(w => w.owner === personId) || WORKSTREAMS[0];
+    if (!ws) { err.textContent = 'No workstream available to add the task to.'; return; }
+    ws.tasks.push({ text, status: 'planned', due, owner: personId });
     recomputeWsStatus(ws);
-    logActivity(ownerName(ws.owner), 'added new task', `"${text}" → ${ws.title}`);
+    logActivity(ownerName(personId), 'added new task', `"${text}" → ${ownerName(personId)}`);
     commitChange();
     closeModal();
   }
