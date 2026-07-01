@@ -809,13 +809,8 @@
     <label class="modal-label">Assign to</label>
     <select class="modal-select" id="modal-ws"></select>
     <label class="modal-label">Category</label>
-    <select class="modal-select" id="modal-category">
-      <option value="Product">Product</option>
-      <option value="UI/UX">UI/UX</option>
-      <option value="Content">Content</option>
-      <option value="Other">Other…</option>
-    </select>
-    <input type="text" class="modal-input" id="modal-category-other" placeholder="Enter a custom category" style="display:none;margin-top:8px;">
+    <select class="modal-select" id="modal-category"></select>
+    <input type="text" class="modal-input" id="modal-category-other" placeholder="Name the new category" style="display:none;margin-top:8px;">
     <label class="modal-label">Deadline (optional)</label>
     <input type="date" class="modal-date" id="modal-due">
     <div class="modal-error" id="modal-error"></div>
@@ -999,7 +994,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="task-check ${t.status}" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status"></div>
         <div class="task-main" data-action="task-status" data-ws="${ws.id}" data-task="${ti}" title="Click to cycle status">
           <div class="task-text ${t.status === 'done' ? 'done' : ''}">${escapeHtml(t.text)}</div>
-          ${t.category ? `<span class="cat-pill">${escapeHtml(t.category)}</span>` : ''}
         </div>
         <div class="task-controls">
           <select class="owner-select" data-edit="task-owner" data-ws="${ws.id}" data-task="${ti}" title="Assign to">
@@ -1014,10 +1008,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function renderWorkstreamCard(ws) {
-    const owner = personById(ws.owner);
     const total = ws.tasks.length;
     const doneTasks = ws.tasks.filter(t => t.status === 'done').length;
     const pct = total > 0 ? Math.round((doneTasks / total) * 100) : 0;
+    // Category groups aren't owned by one person — show who's contributing.
+    const contributors = [...new Set(ws.tasks.map(t => t.owner || ws.owner).filter(Boolean))]
+      .map(id => personById(id).name);
     // A done workstream is archived — show all its tasks. Otherwise show only
     // active ones (completed individual tasks live in the Archive tab).
     const archived = ws.status === 'done';
@@ -1028,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="ws-head">
           <div>
             <div class="ws-title editable" contenteditable="true" data-edit="ws-title" data-ws="${ws.id}" title="Click to edit">${escapeHtml(ws.title)}</div>
-            <div class="ws-owner">${escapeHtml(owner.name)}</div>
+            <div class="ws-owner">${contributors.length ? escapeHtml(contributors.join(', ')) : 'No one assigned yet'}</div>
           </div>
           <div class="ws-status ${ws.status}" data-action="ws-status" data-ws="${ws.id}" title="Click to change status">${STATUS_LABEL[ws.status]}</div>
         </div>
@@ -1115,7 +1111,6 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div class="person-task-text">${escapeHtml(t.text)}</div>
                   <div class="person-task-meta">
                     <span class="ws-pill">${escapeHtml(ws.title)}</span>
-                    ${t.category ? `<span class="cat-pill">${escapeHtml(t.category)}</span>` : ''}
                     <span class="pmeta">${STATUS_LABEL[t.status]}</span>
                     ${t.due ? `<span class="pmeta">Due ${formatDue(t.due)}</span>` : ''}
                   </div>
@@ -1343,12 +1338,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── NEW TASK MODAL ─────────────────────────────────────────
   function openModal() {
-    // Assign by person (names only) — a fresh round of allocation.
+    // Assign to a person, then a category (= a Workstream group).
     const sel = document.getElementById('modal-ws');
     sel.innerHTML = PEOPLE.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')
       + '<option value="unassigned">Unassigned</option>';
+    // Category dropdown is synced to the active workstreams, plus a way to
+    // create a new category.
+    const cat = document.getElementById('modal-category');
+    cat.innerHTML = WORKSTREAMS.filter(ws => ws.status !== 'done')
+      .map(ws => `<option value="${ws.id}">${escapeHtml(ws.title)}</option>`).join('')
+      + '<option value="__other__">+ New category…</option>';
     document.getElementById('modal-text').value = '';
-    document.getElementById('modal-category').value = 'Product';
     document.getElementById('modal-category-other').value = '';
     document.getElementById('modal-category-other').style.display = 'none';
     document.getElementById('modal-due').value = '';
@@ -1360,21 +1360,27 @@ document.addEventListener('DOMContentLoaded', function() {
   function submitTask() {
     const text = document.getElementById('modal-text').value.trim();
     const personId = document.getElementById('modal-ws').value;
-    const catSel = document.getElementById('modal-category').value;
-    const category = catSel === 'Other'
-      ? document.getElementById('modal-category-other').value.trim()
-      : catSel;
+    const catVal = document.getElementById('modal-category').value;
     const due = document.getElementById('modal-due').value || null;
     const err = document.getElementById('modal-error');
     if (!text) { err.textContent = 'Please enter a task description.'; return; }
-    if (catSel === 'Other' && !category) { err.textContent = 'Please enter a custom category.'; return; }
-    // Place the task in the assignee's workstream (or the first one), and stamp
-    // the per-task owner so it shows as theirs regardless of grouping.
-    const ws = WORKSTREAMS.find(w => w.owner === personId) || WORKSTREAMS[0];
-    if (!ws) { err.textContent = 'No workstream available to add the task to.'; return; }
-    ws.tasks.push({ text, status: 'planned', due, owner: personId, category });
+
+    // Resolve the category to a workstream group (creating a new one if needed).
+    let ws;
+    if (catVal === '__other__') {
+      const title = document.getElementById('modal-category-other').value.trim();
+      if (!title) { err.textContent = 'Please name the new category.'; return; }
+      ws = WORKSTREAMS.find(w => w.title.toLowerCase() === title.toLowerCase());
+      if (!ws) { ws = { id: 'cat-' + Date.now(), title, tasks: [] }; WORKSTREAMS.push(ws); }
+    } else {
+      ws = WORKSTREAMS.find(w => w.id === catVal);
+    }
+    if (!ws) { err.textContent = 'Please choose a category.'; return; }
+
+    // The task belongs to the category (workstream) and is assigned to a person.
+    ws.tasks.push({ text, status: 'planned', due, owner: personId });
     recomputeWsStatus(ws);
-    logActivity(ownerName(personId), 'added new task', `"${text}" [${category}] → ${ownerName(personId)}`);
+    logActivity(ownerName(personId), 'added new task', `"${text}" → ${ws.title} · ${ownerName(personId)}`);
     commitChange();
     closeModal();
   }
@@ -1389,7 +1395,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.target.id === 'modal-overlay') closeModal();
   });
   document.getElementById('modal-category').addEventListener('change', (e) => {
-    document.getElementById('modal-category-other').style.display = e.target.value === 'Other' ? 'block' : 'none';
+    document.getElementById('modal-category-other').style.display = e.target.value === '__other__' ? 'block' : 'none';
   });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1425,14 +1431,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const prev = t.status;
       t.status = cycleStatus(t.status);
       recomputeWsStatus(ws);
-      logActivity(ownerName(ws.owner), 'changed task status', `"${t.text}": ${prev} → ${t.status}`);
+      logActivity(ownerName(t.owner || ws.owner), 'changed task status', `"${t.text}": ${prev} → ${t.status}`);
       commitChange();
     } else if (a === 'ws-status') {
       const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
       if (!ws) return;
       const prev = ws.status;
       ws.status = cycleStatus(ws.status);
-      logActivity(ownerName(ws.owner), 'changed workstream status', `${ws.title}: ${prev} → ${ws.status}`);
+      logActivity('Team', 'changed category status', `${ws.title}: ${prev} → ${ws.status}`);
       commitChange();
     } else if (a === 'task-remove') {
       const ws = WORKSTREAMS.find(w => w.id === el.dataset.ws);
@@ -1442,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!confirm(`Remove task "${t.text}"?`)) return;
       ws.tasks.splice(idx, 1);
       recomputeWsStatus(ws);
-      logActivity(ownerName(ws.owner), 'removed task', `"${t.text}" from ${ws.title}`);
+      logActivity(ownerName(t.owner || ws.owner), 'removed task', `"${t.text}" from ${ws.title}`);
       commitChange();
     }
   });
@@ -1458,7 +1464,7 @@ document.addEventListener('DOMContentLoaded', function() {
       t.due = due.value || null;
       if (prevDue !== t.due) {
         const label = t.due ? `set deadline to ${formatDue(t.due)}` : 'cleared deadline';
-        logActivity(ownerName(ws.owner), 'updated task deadline', `"${t.text}": ${label}`);
+        logActivity(ownerName(t.owner || ws.owner), 'updated task deadline', `"${t.text}": ${label}`);
       }
       commitChange();
       return;
@@ -1496,7 +1502,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const prev = t.owner || ws.owner;
       if (prev === value) return;
       t.owner = value;
-      logActivity(ownerName(ws.owner), 'reassigned task', `"${t.text}": ${ownerName(prev)} → ${ownerName(value)}`);
+      logActivity(ownerName(value), 'reassigned task', `"${t.text}": ${ownerName(prev)} → ${ownerName(value)}`);
       commitChange();
       return;
     }
@@ -1506,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!value || value === ws.title) { render(); return; }
       const old = ws.title;
       ws.title = value;
-      logActivity(ownerName(ws.owner), 'renamed workstream', `${old} → ${value}`);
+      logActivity('Team', 'renamed category', `${old} → ${value}`);
       commitChange();
       return;
     }
