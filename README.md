@@ -7,18 +7,18 @@ same live state. No login.
 
 ## Features
 
-- **Click-to-cycle status** on any task row, workstream badge, or pipeline step
+- **Click-to-cycle status** on any task row or workstream badge
   (`planned → doing → review → done → blocked`). Changing task statuses
   re-derives the workstream's overall status automatically.
-- **Add tasks** with the "+ New Task" button (pick a workstream + optional
-  deadline).
+- **Add tasks** with the "+ New Task" button (assign a person, pick a
+  category + optional deadline).
 - **Remove tasks** with the × on each row.
 - **Inline deadlines** — edit any task's date right on the row.
 - **Reassign tasks** — each task has an owner dropdown (per-task reassignment).
 - **Categories** — assign each new task a category (Product / UI/UX / Content / custom).
 - **Archive** — completed tasks automatically move to the Archive tab.
-- **Editable text** — click to edit workstream titles, risk names + mitigations,
-  and deliverable kind / title / description / link.
+- **Editable text** — click to edit workstream titles and deliverable
+  kind / title / description / link.
 - **Activity log** (Activity tab) — who changed what and when, grouped by date,
   with colored avatars and relative timestamps. Auto-refreshes every 10s.
 - **By Person** tab lists each person with the tasks assigned to them.
